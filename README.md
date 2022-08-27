@@ -35,7 +35,7 @@ void(float success, float value) ShowPlayerKillCount1 =
 void() ShowPlayerKillCount = 
 {
   Interop::SetKey(self.netname,".kill");
-  Interop::DatabaseGet(ShowPlayerKillCount);
+  Interop::DatabaseGet(ShowPlayerKillCount1);
 }
 ```
 
