@@ -1,6 +1,12 @@
 # QEInterop
 A proof of concept QuakeC library + C# program for Quake Enhanced that allows communication between QC and an external database
 
+* [Quick Start](#quick-start)
+* [How it works](#how-it-works)
+* [Pros & Cons](#pros--cons)
+* [Scoping](#scoping)
+* [QuakeC reference](#quakec-reference)
+
 ## Quick start
 * Import 'interop.qc' into your progs.src
 
@@ -121,3 +127,86 @@ It can take ~150ms to execute one command and get the response.
 So that makes it a bit more cumbersome and harder to program for.
 * Only numeric values: Because QC can't read string cvars, there's no support for passing text.
 * HDD usage: Due to reading and writing on files, it might wear off a little bit of your HDD.
+
+
+## Scoping
+
+Due to the asynchronous nature, you might want to make sure that commands get executed in a specific order. The solution for this is creating an execution scope!
+
+Consider the following case:
+1. Get a value from database
+2. Multiply the value
+3. Save the value to database
+
+You can create a scope by calling `Interop::CreateScope`. By doing this it means that any command from another scope will not be executed until the current scope ends.
+
+```
+void(float success,float value) Callback1 =
+{
+  value *= 2;
+  Interop::DatabaseSet(value,,Interop::CurrentScope()); // Execute using the current scope
+  Interop::EndScope(); // The execution scope will be terminated after the DatabaseSet finishes
+}
+
+Interop::SetKey("myvalue");
+Interop::DatabaseGet(Callback1,Interop::CreateScope()); // Creates a new scope
+```
+
+## QuakeC reference
+
+### Commands
+
+#### Interop::SetKey `(string key1,optional string key2,optional string key3,optional string key4)`
+Sets the key for the next database operation. Concatenates up to 4 strings.
+
+#### Interop::DatabaseSet `(float value, optional callback, optional scope)`
+Sets a value in the database.
+
+Specify `key` using `Interop::SetKey` before calling this function
+
+**Callback**: `void(float success)`
+
+#### Interop::DatabaseGet `(optional callback, optional scope)`
+
+Gets a value in the database.
+
+Specify `key` using `Interop::SetKey` before calling this function
+
+**Callback**: `void(float success, float value)`
+
+#### Interop::DatabaseIncrement `(float amount=1,optional callback,optional scope)`
+
+Increments a value in the database. If the key doesn't exist, it'll be created with a value of `amount`.
+
+Specify `key` using `Interop::SetKey` before calling this function
+
+**Callback**: `void(float value)`
+
+#### Interop::DatabaseDelete `(optional callback,optional scope)`
+
+Deletes a key in the database. Callback returns `success = TRUE` if key existed.
+
+Specify `key` using `Interop::SetKey` before calling this function
+
+**Callback**: `void(float success)`
+
+#### Interop::GetCurrentDate `(optional callback, optional scope)`
+Gets the current date.
+
+**Callback**: `void(float day,float month,float year)`
+
+#### Interop::GetCurrentTime `(optional callback, optional scope)`
+Gets the current time.
+
+**Callback**: `void(float hours,float minutes,float seconds)`
+
+### Scoping (Advanced)
+
+#### Interop::CreateScope
+Creates a new execution scope
+
+#### Interop::CurrentScope
+Returns the current scope being executed
+
+#### Interop::EndScope
+Terminates the current execution scope
